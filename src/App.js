@@ -18,10 +18,12 @@ const PARAM_HPP = 'hitsPerPage=';
       super(props);
       
       this.state = {
-        result: null,
+        results: null,
+        searchKey: '',
         searchTerm: DEFAULT_QUERY,
       };
 
+      this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
       this.setSearchTopStories = this.setSearchTopStories.bind(this);
       this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
       this.onSearchChange = this.onSearchChange.bind(this);
@@ -29,12 +31,17 @@ const PARAM_HPP = 'hitsPerPage=';
       this.onDismiss = this.onDismiss.bind(this);
     }
 
+    needsToSearchTopStories(searchTerm) {
+      return !this.state.results[searchTerm];
+    }
+
     setSearchTopStories(result) {
 
       const { hits, page } = result;
+      const { searchKey, results } = this.state;
 
-      const oldHits = page !== 0
-        ? this.state.result.hits
+      const oldHits = results && results[searchKey]
+        ? results[searchKey].hits
         : [];
 
       const updatedHits = [
@@ -43,7 +50,10 @@ const PARAM_HPP = 'hitsPerPage=';
       ];
 
       this.setState({
-        result: { hits: updatedHits, page }
+        results: {
+          ...results,
+          [searchKey]: { hits: updatedHits, page }
+        }
       });
 
 
@@ -60,6 +70,7 @@ const PARAM_HPP = 'hitsPerPage=';
       
     componentDidMount() {
       const { searchTerm } = this.state;
+      this.setState({ searchKey: searchTerm });
       this.fetchSearchTopStories(searchTerm);
     }
 
@@ -69,25 +80,48 @@ const PARAM_HPP = 'hitsPerPage=';
 
     onSearchSubmit(event) {
       const { searchTerm } = this.state;
-      this.fetchSearchTopStories(searchTerm);
+      this.setState({ searchKey: searchTerm });
+      if (this.needsToSearchTopStories(searchTerm)) {
+        this.fetchSearchTopStories(searchTerm);
+      }
       event.preventDefault();
     }
 
     onDismiss(id) {
       // const updatedList = this.state.list.filter(item => item.objectID !== id);
 
+      const { searchKey, results } = this.state;
+      const { hits, page } = results[searchKey];
       const isNotId = item => item.objectID !== id;
-      const updatedHits = this.state.result.hits.filter(isNotId);
-      this.setState({ 
-        result: Object.assign({}, this.state.result, { hits: updatedHits })
+      const updatedHits = hits.filter(isNotId);
+
+
+      this.setState({
+        results: {
+          ...results,
+          [searchKey]: { hits: updatedHits, page }
+        }
       });
     }
 
     render() {
-      const { searchTerm, result } = this.state;
-      const page = (result && result.page) || 0;
-
-      if (!result) { return null; }
+      const {
+        searchTerm,
+        results,
+        searchKey
+        } = this.state;
+      
+      const page = (
+        results &&
+        results[searchKey] &&
+        results[searchKey].page
+        ) || 0;
+        
+      const list = (
+        results &&
+        results[searchKey] &&
+        results[searchKey].hits
+        ) || [];
 
       return (
         <div className="page">
@@ -100,15 +134,15 @@ const PARAM_HPP = 'hitsPerPage=';
             Search
           </Search>
           </div>
-          { result
+          { results
             && <Table
-              list={result.hits}
+              list={list}
               // pattern={searchTerm}
               onDismiss={this.onDismiss}
             />
           }
           <div className="interactions">
-            <Button onClick={() => this.fetchSearchTopStories(searchTerm, page + 1)}>
+            <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
               More
             </Button>
           </div>
