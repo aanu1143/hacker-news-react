@@ -49,13 +49,13 @@
   
 .button-inline {
   border-width: 0;
-  background: transparent;
+  background: greenyellow;
   color: inherit;
   text-align: inherit;
   -webkit-font-smoothing: inherit;
-  padding: 0;
+  padding: 8px;
   font-size: inherit;
-  cursor: pointer;  
+  cursor: pointer; 
 }
   
 .button-active {
