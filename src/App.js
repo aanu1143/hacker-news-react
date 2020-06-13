@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import axios from 'axios';
+import { sortBy } from 'lodash';
 import './App.css';
 
 const DEFAULT_QUERY = 'redux';
@@ -10,6 +11,16 @@ const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
 const PARAM_PAGE = 'page=';
 const PARAM_HPP = 'hitsPerPage=';
+
+
+
+const SORTS = {
+  NONE: list => list,
+  TITLE: list => sortBy(list, 'title'),
+  AUTHOR: list => sortBy(list, 'author'),
+  COMMENTS: list => sortBy(list, 'num_comments').reverse(),
+  POINTS: list => sortBy(list, 'points').reverse(),
+};
 
 class App extends Component {
   _isMounted = false;
@@ -22,6 +33,8 @@ class App extends Component {
       searchKey: '',
       searchTerm: DEFAULT_QUERY,
       error: null,
+      isLoading: false,
+      sortKey: 'NONE',
     };
 
     this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
@@ -53,11 +66,14 @@ class App extends Component {
       results: {
         ...results,
         [searchKey]: { hits: updatedHits, page }
-      }
+      },
+      isLoading: false
     });
   }
 
   fetchSearchTopStories(searchTerm, page = 0) {
+    this.setState({ isLoading: true });
+
     axios(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
       .then(result => this.setSearchTopStories(result.data))
       .catch(error => this._isMounted && this.setState({ error }));
@@ -110,7 +126,8 @@ class App extends Component {
       searchTerm,
       results,
       searchKey,
-      error
+      error,
+      isLoading
     } = this.state;
 
     const page = (
@@ -146,9 +163,11 @@ class App extends Component {
           />
         }
         <div className="interactions">
-          <Button onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
+          <ButtonWithLoading
+            isLoading={isLoading}
+            onClick={() => this.fetchSearchTopStories(searchKey, page + 1)}>
             More
-          </Button>
+          </ButtonWithLoading>
         </div>
       </div>
     );
@@ -212,6 +231,19 @@ const Button = ({
   >
     {children}
   </button>
+
+const Loading = () =>
+  <div>Loading ...</div>
+
+const withFoo = (Component) => (props) =>
+  <Component { ...props } />
+
+const withLoading = (Component) => ({ isLoading, ...rest }) =>
+  isLoading
+  ? <Loading />
+  : <Component { ...rest } />
+
+  const ButtonWithLoading = withLoading(Button);
 
 export {
   Button,
