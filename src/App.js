@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import { sortBy } from 'lodash';
+import classNames from 'classnames';
 import './App.css';
 
 const DEFAULT_QUERY = 'redux';
@@ -123,7 +124,8 @@ class App extends Component {
   }
   
   onSort(sortKey) {
-    this.setState({ sortKey });
+    const isSortReverse = this.state.sortKey === sortKey && !this.state.isSortReverse;
+    this.setState({ sortKey, isSortReverse });
   }
 
   render() {
@@ -133,7 +135,8 @@ class App extends Component {
       searchKey,
       error,
       isLoading,
-      sortKey
+      sortKey,
+      isSortReverse
     } = this.state;
 
     const page = (
@@ -166,6 +169,7 @@ class App extends Component {
           : <Table
             list={list}
             sortKey={sortKey}
+            isSortReverse={isSortReverse}
             onSort={this.onSort}
             onDismiss={this.onDismiss}
           />
@@ -202,15 +206,22 @@ const Search = ({
 const Table = ({
   list,
   sortKey,
+  isSortReverse,
   onSort,
   onDismiss
-  }) =>
+  }) => {
+    const sortedList = SORTS[sortKey](list);
+    const reverseSortedList = isSortReverse
+    ? sortedList.reverse()
+    : sortedList;
+  return(
   <div className="table">
     <div className="table-header">
       <span style={{ width: '40%' }}>
         <Sort
           sortKey={'TITLE'}
           onSort={onSort}
+          activeSortKey={sortKey}
           >
           Title
         </Sort>
@@ -219,6 +230,7 @@ const Table = ({
         <Sort
           sortKey={'AUTHOR'}
           onSort={onSort}
+          activeSortKey={sortKey}
           >
           Author
         </Sort>
@@ -227,6 +239,7 @@ const Table = ({
         <Sort
           sortKey={'COMMENTS'}
           onSort={onSort}
+          activeSortKey={sortKey}
           >
           Comments
         </Sort>
@@ -235,6 +248,7 @@ const Table = ({
         <Sort
           sortKey={'POINTS'}
           onSort={onSort}
+          activeSortKey={sortKey}
           >
           Points
         </Sort>
@@ -243,7 +257,7 @@ const Table = ({
         Archive
       </span>
     </div>
-    {SORTS[sortKey](list).map(item =>
+    {reverseSortedList.map(item =>
       <div key={item.objectID} className="table-row">
         <span style={{ width: '40%' }}>
           <a href={item.url}>{item.title}</a>
@@ -268,11 +282,29 @@ const Table = ({
       </div>
     )}
   </div>
+  );
+}
 
-const Sort = ({ sortKey, onSort, children }) =>
-  <Button onClick={() => onSort(sortKey)}>
-    {children}
-  </Button>
+
+const Sort = ({
+  sortKey,
+  activeSortKey,
+  onSort,
+  children
+}) => {
+  const sortClass = classNames(
+    'button-inline',
+    { 'button-active': sortKey === activeSortKey }
+  );
+  return (
+    <Button
+      onClick={() => onSort(sortKey)}
+      className={sortClass}
+    >
+      {children}
+    </Button>
+  );
+}
 
 const Button = ({
   onClick,
